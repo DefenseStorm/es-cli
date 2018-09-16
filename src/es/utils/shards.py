@@ -11,7 +11,6 @@ from . import humansize
 
 
 class EsShard(NamedTuple):
-    node_type: str
     node: str
     index: str
     shard_type: str
@@ -31,8 +30,7 @@ def _match_to_shard(re_match) -> EsShard:
     """
     Returns an InternalShard.
     """
-    return EsShard(node_type=re_match.group('nodetype'),
-                   index=re_match.group('index'),
+    return EsShard(index=re_match.group('index'),
                    num_shard=re_match.group('numshard'),
                    status=re_match.group('status'),
                    size=re_match.group('size'),
@@ -55,7 +53,7 @@ def get_shards(include_hot=True, include_warm=False, include_percolate=False,
                   r'\d+\s+' \
                   r'(?P<size>\S+)\s+' \
                   r'\S+\s+' \
-                  r'(?P<node>{}-es-(?P<nodetype>data-hot|data-warm|percolate)-\S+)\s*' \
+                  r'(?P<node>\S+)\s*' \
                   r'(?P<extra>.*)$'
     pattern = re.compile(shard_regex.format(env))
     lines = requests.get("{}/_cat/shards".format(es_config.es_host()), stream=True).iter_lines()
@@ -66,11 +64,11 @@ def get_shards(include_hot=True, include_warm=False, include_percolate=False,
         match = pattern.match(shard_line)
         if match:
             shard = _match_to_shard(match)
-            if include_hot and shard.node_type == 'data-hot':
+            if include_hot and '-hot-' in shard.node:
                 shards.append(shard)
-            elif include_warm and shard.node_type == 'data-warm':
+            elif include_warm and '-warm-' in shard.node:
                 shards.append(shard)
-            elif include_percolate and shard.node_type == 'percolate':
+            elif include_percolate and '-percolate-' in shard.node:
                 shards.append(shard)
 
     # Remove non-started shards, unless we explicitly want them
