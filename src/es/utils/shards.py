@@ -10,14 +10,14 @@ from . import humansize
 
 def _match_to_shard(re_match):
     return {'node-type': re_match.group('nodetype'),
-        'index': re_match.group('index'), 
-        'num-shard': re_match.group('numshard'),
-        'status': re_match.group('status'),
-        'size': re_match.group('size'),
-        'node': re_match.group('node')}
+            'index': re_match.group('index'),
+            'num-shard': re_match.group('numshard'),
+            'status': re_match.group('status'),
+            'size': re_match.group('size'),
+            'node': re_match.group('node')}
 
 
-def get_shards(include_hot = True, include_warm = False, include_percolate = False, include_all_status = False):
+def get_shards(include_hot=True, include_warm=False, include_percolate=False, include_all_status=False):
     env = es_config.env()
     shard_regex = r'^(?P<index>\S+)\s+' \
                   r'(?P<numshard>\d+)\s+' \
@@ -48,16 +48,16 @@ def get_shards(include_hot = True, include_warm = False, include_percolate = Fal
                 next
 
     # Remove non-started shards, unless we explicitly want them
-    shards = [ shard for shard in shards if shard['status'] == 'STARTED' or include_all_status ]
+    shards = [shard for shard in shards if shard['status'] == 'STARTED' or include_all_status]
     return shards
 
 
 def summarize_shards(node, shards):
-    shards_in_node = [ shard for shard in shards if shard['node'] == node ]
+    shards_in_node = [shard for shard in shards if shard['node'] == node]
     if len(shards_in_node) == 0:
-        return (0, 0)
+        return 0, 0
 
-    sizes = [ humansize.parse(shard['size']) for shard in shards_in_node ]
+    sizes = [humansize.parse(shard['size']) for shard in shards_in_node]
     size = reduce(add, sizes)
 
-    return (len(shards_in_node), size)
+    return len(shards_in_node), size

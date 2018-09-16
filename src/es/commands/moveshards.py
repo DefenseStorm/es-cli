@@ -7,8 +7,8 @@ from ..utils import humansize
 
 
 # Prints the N1 smallest and N2 largest shards in the given node (or viceversa, it doesn't matter)
-def _print_some_shards(node, shards, num_shards, indentation, reverse = False):
-    shards_in_node = [ shard for shard in shards if shard['node'] == node ]
+def _print_some_shards(node, shards, num_shards, indentation, reverse=False):
+    shards_in_node = [shard for shard in shards if shard['node'] == node]
     sorted_shards = sorted(shards_in_node, key=lambda x: humansize.parse(x['size']),
                            reverse=reverse)
 
@@ -28,7 +28,7 @@ def execute(args):
     # Get the details of the node passed in --from or --to
     partial_name = args.from_node if args.from_node else args.to_node
     hot_nodes = esnodes.get_nodes(True, False, False)
-    matches = [ node_name for node_name in hot_nodes.keys() if partial_name in node_name]
+    matches = [node_name for node_name in hot_nodes.keys() if partial_name in node_name]
 
     if len(matches) == 0:
         print("No node matches the given value: {}".format(partial_name))
@@ -42,15 +42,15 @@ def execute(args):
     desired_node = hot_nodes[matches[0]]
 
     # Find all other nodes in the same AZ
-    nodes_same_az = [ node for node in hot_nodes.values() 
-                           if node['zone'] == desired_node['zone'] and node is not desired_node]
+    nodes_same_az = [node for node in hot_nodes.values()
+                     if node['zone'] == desired_node['zone'] and node is not desired_node]
     if len(nodes_same_az) == 0:
         print("There are {} nodes, but none in the same AZ as {}".format(len(hot_nodes), desired_node['node']))
         sys.exit(1)
 
     # Find shard distribution to recommend where to move the shards
     shards = esshards.get_shards()
-    shard_distribution = { node['node']:esshards.summarize_shards(node['node'], shards) for node in nodes_same_az }
+    shard_distribution = {node['node']: esshards.summarize_shards(node['node'], shards) for node in nodes_same_az}
     (curr_num_shards, curr_size) = esshards.summarize_shards(desired_node['node'], shards)
 
     # Find the 3 nodes with fewer shards
