@@ -90,11 +90,11 @@ def _parse_args():
                               help="remove any blocks from the indices on hot nodes")
 
     # Shards
-    group = sp_shards.add_mutually_exclusive_group(required=False)
     sp_shards.add_argument('-s', '--summary',
                            dest='summary',
                            action='store_true',
                            help="Show summarized distribution of shards per node")
+    group = sp_shards.add_mutually_exclusive_group(required=False)
     group.add_argument('-w', '--warm',
                        dest='only_warm',
                        action='store_true',
@@ -103,6 +103,10 @@ def _parse_args():
                        dest='only_percolate',
                        action='store_true',
                        help="Target percolator nodes instead of hot nodes")
+    sp_shards.add_argument('-f', '--filter',
+                           dest='filter',
+                           action='store',
+                           help="Only consider shards matching this regex")
 
     return parser.parse_args()
 

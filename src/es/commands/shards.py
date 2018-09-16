@@ -17,7 +17,7 @@ def execute(args):
     else:
         node_type = NodeType.HOT
 
-    shards = esshards.get_shards(node_type, include_all_status=True)
+    shards = esshards.get_shards(node_type, include_all_status=True, shard_filter=args.filter)
 
     try:
         if args.summary:

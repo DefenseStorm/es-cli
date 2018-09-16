@@ -22,7 +22,7 @@ def _match_to_shard(re_match) -> EsShard:
                    extra=re_match.group('extra'))
 
 
-def get_shards(node_type: NodeType, include_all_status=False) -> List[EsShard]:
+def get_shards(node_type: NodeType, include_all_status=False, shard_filter=None) -> List[EsShard]:
     """
         Retrieves the list of shards from ES and returns a list of EsShard. It respects the shard type and status type
         passed as parameters.
@@ -46,15 +46,9 @@ def get_shards(node_type: NodeType, include_all_status=False) -> List[EsShard]:
         match = pattern.match(shard_line)
         if match:
             shard = _match_to_shard(match)
-            if node_type & NodeType.HOT and '-hot-' in shard.node:
-                shards.append(shard)
-            elif node_type & NodeType.WARM and '-warm-' in shard.node:
-                shards.append(shard)
-            elif node_type & NodeType.PERCOLATE and '-percolate-' in shard.node:
+            if _shard_matches_filter(shard, node_type, shard_filter, include_all_status):
                 shards.append(shard)
 
-    # Remove non-started shards, unless we explicitly want them
-    shards = [shard for shard in shards if shard.status == 'STARTED' or include_all_status]
     return shards
 
 
@@ -76,3 +70,16 @@ def summarize_shards(shards: List[EsShard]) -> List[SummarizedShards]:
                                           size=total_size,
                                           amount=len(sizes)))
     return summaries
+
+
+def _shard_matches_filter(shard, included_node_types, shard_filter, include_all_status):
+
+    node_type_matches = (included_node_types & NodeType.HOT and '-hot-' in shard.node) or \
+                        (included_node_types & NodeType.WARM and '-warm-' in shard.node) or \
+                        (included_node_types & NodeType.PERCOLATE and '-percolate-' in shard.node)
+
+    node_status_matches = shard.status == 'STARTED' or include_all_status
+
+    filter_matches = re.search(shard_filter, shard.index) if shard_filter else True
+
+    return node_type_matches and node_status_matches and filter_matches
