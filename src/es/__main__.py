@@ -2,8 +2,9 @@
 import argparse
 import logging
 
+from .utils import config
+config.reload_logging_level()
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('__main__')
 
 
