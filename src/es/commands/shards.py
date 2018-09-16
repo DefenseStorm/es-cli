@@ -4,20 +4,20 @@ import logging
 
 from ..utils import shards as esshards
 from ..utils import humansize
+from ..types.nodes import NodeType
 
 logger = logging.getLogger("es-shards")
 
 
 def execute(args):
     if args.only_warm:
-        shards = esshards.get_shards(include_all_status=True, include_hot=False, include_warm=True,
-                                     include_percolate=False)
+        node_type = NodeType.WARM
     elif args.only_percolate:
-        shards = esshards.get_shards(include_all_status=True, include_hot=False, include_warm=False,
-                                     include_percolate=True)
+        node_type = NodeType.PERCOLATE
     else:
-        shards = esshards.get_shards(include_all_status=True, include_hot=True, include_warm=False,
-                                     include_percolate=False)
+        node_type = NodeType.HOT
+
+    shards = esshards.get_shards(node_type, include_all_status=True)
 
     try:
         if args.summary:

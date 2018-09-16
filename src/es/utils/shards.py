@@ -2,34 +2,17 @@
 from functools import reduce
 from operator import add
 import re
-from typing import NamedTuple, List
+from typing import List
 
 import requests
 
 from . import config as es_config
 from . import humansize
-
-
-class EsShard(NamedTuple):
-    node: str
-    index: str
-    shard_type: str
-    num_shard: int
-    size: str
-    status: str
-    extra: str
-
-
-class SummarizedShards(NamedTuple):
-    node: str
-    size: str
-    amount: int
+from ..types.shards import EsShard, SummarizedShards
+from ..types.nodes import NodeType
 
 
 def _match_to_shard(re_match) -> EsShard:
-    """
-    Returns an InternalShard.
-    """
     return EsShard(index=re_match.group('index'),
                    num_shard=re_match.group('numshard'),
                    status=re_match.group('status'),
@@ -39,8 +22,7 @@ def _match_to_shard(re_match) -> EsShard:
                    extra=re_match.group('extra'))
 
 
-def get_shards(include_hot=True, include_warm=False, include_percolate=False,
-               include_all_status=False) -> List[EsShard]:
+def get_shards(node_type: NodeType, include_all_status=False) -> List[EsShard]:
     """
         Retrieves the list of shards from ES and returns a list of EsShard. It respects the shard type and status type
         passed as parameters.
@@ -64,11 +46,11 @@ def get_shards(include_hot=True, include_warm=False, include_percolate=False,
         match = pattern.match(shard_line)
         if match:
             shard = _match_to_shard(match)
-            if include_hot and '-hot-' in shard.node:
+            if node_type & NodeType.HOT and '-hot-' in shard.node:
                 shards.append(shard)
-            elif include_warm and '-warm-' in shard.node:
+            elif node_type & NodeType.WARM and '-warm-' in shard.node:
                 shards.append(shard)
-            elif include_percolate and '-percolate-' in shard.node:
+            elif node_type & NodeType.PERCOLATE and '-percolate-' in shard.node:
                 shards.append(shard)
 
     # Remove non-started shards, unless we explicitly want them
