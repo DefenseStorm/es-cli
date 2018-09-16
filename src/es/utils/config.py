@@ -1,22 +1,29 @@
 
-import json
+import yaml
 import os
 
 _config_file_name = "/etc/es-cli.cfg"
 with open(_config_file_name) as config_fp:
-    _config = json.load(config_fp)
+    _config = yaml.load(config_fp)
+
+
+env_vars = {
+    "env": "ES_CLI_ENV",
+    "host": "ES_CLI_HOST",
+    "index_prefix": "ES_CLI_INDEX_PREFIX",
+}
 
 
 def env():
-    return _get_config("ES_CLI_ENV")
+    return _get_config("env")
 
 
 def es_host():
-    return _get_config("ES_CLI_HOST")
+    return _get_config("host")
 
 
 def index_prefix():
-    return _get_config("ES_CLI_INDEX_PREFIX")
+    return _get_config("index_prefix")
 
 
 def _get_config(name):
@@ -24,12 +31,13 @@ def _get_config(name):
         Returns the value for the config variable called "name" from the environment variables or the config file.
         It gives priority to variables in the environment.
     """
-    value = os.getenv(name)
+    value = os.getenv(env_vars[name])
     if value:
         return value
 
+    # If var is not overriden in the env, check the file
     if name in _config:
         return _config[name]
 
-    raise KeyError("Missing {} variable in the environment and config file ({}).".format(
+    raise KeyError("Missing '{}' variable in the environment and config file ({}).".format(
         name, _config_file_name))

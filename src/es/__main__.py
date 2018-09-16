@@ -1,9 +1,14 @@
-#!/usr/bin/env python3
 
 import argparse
+import logging
+
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('__main__')
+
 
 def _parse_args():
-    parser = argparse.ArgumentParser(description="Executes common commands against ES so you need to " \
+    parser = argparse.ArgumentParser(description="Executes common commands against ES so you need to "
                                                  "craft fewer curls.")
     sp = parser.add_subparsers(dest="subcommand")
     sp.required = True
@@ -13,13 +18,13 @@ def _parse_args():
     sp_durability = sp.add_parser('durability',
                                   help="gets/sets the durability of all of today's indices")
     sp_move_shards = sp.add_parser('move-shards',
-                                  help="helping hand for manually moving shards",
-                                  description="Provides insights about shard distribution to help in deciding " \
-                                              "how to move shards between nodes.")
+                                   help="helping hand for manually moving shards",
+                                   description="Provides insights about shard distribution to help in deciding "
+                                               "how to move shards between nodes.")
     sp_read_only = sp.add_parser('read-only',
                                  help="lists read-only indices in hot nodes",
-                                 description="Searches the hot nodes for indices that are set to read-only " \
-                                             "(which can happen if disks are so full that they reach the high " \
+                                 description="Searches the hot nodes for indices that are set to read-only "
+                                             "(which can happen if disks are so full that they reach the high "
                                              "watermark of ES, which then decides it will stop accepting new data).")
     sp_shards = sp.add_parser('shards',
                               help="lists shards in hot, warm, and percolate nodes")
@@ -102,32 +107,32 @@ def _parse_args():
 
 
 def es_allocation(args):
-    from es.commands import allocation
+    from .commands import allocation
     allocation.execute(args)
 
 
 def es_durability(args):
-    from es.commands import durability
+    from .commands import durability
     durability.execute(args)
 
 
 def es_move_shards(args):
-    from es.commands import moveshards
+    from .commands import moveshards
     moveshards.execute(args)
 
 
 def es_read_only(args):
-    from es.commands import readonly
+    from .commands import readonly
     readonly.execute(args)
 
 
 def es_shards(args):
-    from es.commands import shards
+    from .commands import shards
     shards.execute(args)
 
 
 def es_version(args):
-    from es.utils import get_version
+    from .utils import get_version
     print(get_version())
 
 
