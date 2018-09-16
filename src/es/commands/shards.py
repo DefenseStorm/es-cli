@@ -1,6 +1,11 @@
 
+import errno
+import logging
+
 from ..utils import shards as esshards
 from ..utils import humansize
+
+logger = logging.getLogger("es-shards")
 
 
 def execute(args):
@@ -14,10 +19,17 @@ def execute(args):
         shards = esshards.get_shards(include_all_status=True, include_hot=True, include_warm=False,
                                      include_percolate=False)
 
-    if args.summary:
-        show_summary(shards)
-    else:
-        show_details(shards)
+    try:
+        if args.summary:
+            show_summary(shards)
+        else:
+            show_details(shards)
+    except IOError as e:
+        # A SIGPIPE is normal when `es-cli` is piped to a command that ends prematurely (like `es shards | head`)
+        if e.errno == errno.EPIPE:
+            logger.debug("Broken Pipe")
+        else:
+            raise
 
 
 def show_details(shards):
