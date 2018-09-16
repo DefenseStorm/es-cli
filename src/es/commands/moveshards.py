@@ -1,6 +1,9 @@
-import re
-import sys
 
+import sys
+from typing import Dict
+
+from ..types.shards import SummarizedShards
+from ..types.nodes import NodeType
 from ..utils import shards as esshards
 from ..utils import nodes as esnodes
 from ..utils import humansize
@@ -49,13 +52,15 @@ def execute(args):
         sys.exit(1)
 
     # Find shard distribution to recommend where to move the shards
-    shards = esshards.get_shards()
-    shard_distribution = {node['node']: esshards.summarize_shards(node['node'], shards) for node in nodes_same_az}
-    (curr_num_shards, curr_size) = esshards.summarize_shards(desired_node['node'], shards)
+    shards = esshards.get_shards(NodeType.HOT)
+    summaries = esshards.summarize_shards(shards)
+    shard_distribution: Dict[str, SummarizedShards] = {summary.node: summary for summary in summaries
+                                                       if summary.node in nodes_same_az}
+    (curr_num_shards, curr_size) = next(summary for summary in summaries if summary.node == desired_node.node)
 
     # Find the 3 nodes with fewer shards
-    fewer_shards = sorted(shard_distribution, key=lambda x: shard_distribution[x][0])
-    smaller_size = sorted(shard_distribution, key=lambda x: shard_distribution[x][1])
+    fewer_shards = sorted(shard_distribution, key=lambda x: shard_distribution[x].amount)
+    smaller_size = sorted(shard_distribution, key=lambda x: shard_distribution[x].size)
 
     if args.from_node:
         print("The node {} from where you want to move shards has {} shards ({})."
@@ -65,14 +70,14 @@ def execute(args):
         print("From the nodes in the same AZ, these are the {} with fewer shards:".format(args.num_nodes))
         for node in fewer_shards[:args.num_nodes]:
             print("\t* {}: {} shards ({})".format(node,
-                                                  shard_distribution[node][0],
-                                                  humansize.stringify(shard_distribution[node][1])))
+                                                  shard_distribution[node].amount,
+                                                  humansize.stringify(shard_distribution[node].size)))
         print()
         print("From the nodes in the same AZ, these are the {} with smaller shards:".format(args.num_nodes))
         for node in smaller_size[:args.num_nodes]:
             print("\t* {}: {} shards ({})".format(node,
-                                                  shard_distribution[node][0],
-                                                  humansize.stringify(shard_distribution[node][1])))
+                                                  shard_distribution[node].amount,
+                                                  humansize.stringify(shard_distribution[node].size)))
 
     if args.to_node:
         print("The node to which you want to move shards has {} shards ({})."
@@ -82,15 +87,15 @@ def execute(args):
 
         for node in list(reversed(fewer_shards))[:args.num_nodes]:
             print("\t* {}: {} shards ({})".format(node,
-                                                  shard_distribution[node][0],
-                                                  humansize.stringify(shard_distribution[node][1])))
+                                                  shard_distribution[node].amount,
+                                                  humansize.stringify(shard_distribution[node].size)))
             _print_some_shards(node, shards, args.num_shards, '\t\t', reverse=True)
             print()
         print()
         print("From the nodes in the same AZ, these are the {} with larger shards:".format(args.num_nodes))
         for node in list(reversed(smaller_size))[:args.num_nodes]:
             print("\t* {}: {} shards ({})".format(node,
-                                                  shard_distribution[node][0],
-                                                  humansize.stringify(shard_distribution[node][1])))
+                                                  shard_distribution[node].amount,
+                                                  humansize.stringify(shard_distribution[node].size)))
             _print_some_shards(node, shards, args.num_shards, '\t\t', reverse=True)
             print()
