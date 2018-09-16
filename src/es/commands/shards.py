@@ -1,5 +1,4 @@
 
-import errno
 import logging
 
 from ..utils import shards as esshards
@@ -19,17 +18,10 @@ def execute(args):
 
     shards = esshards.get_shards(node_type, include_all_status=True, shard_filter=args.filter)
 
-    try:
-        if args.summary:
-            show_summary(shards)
-        else:
-            show_details(shards)
-    except IOError as e:
-        # A SIGPIPE is normal when `es-cli` is piped to a command that ends prematurely (like `es shards | head`)
-        if e.errno == errno.EPIPE:
-            logger.debug("Broken Pipe")
-        else:
-            raise
+    if args.summary:
+        show_summary(shards)
+    else:
+        show_details(shards)
 
 
 def show_details(shards):

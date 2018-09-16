@@ -1,5 +1,6 @@
 
 import argparse
+import errno
 import logging
 
 from .utils import config
@@ -143,4 +144,12 @@ def es_version(args):
 
 if __name__ == '__main__':
     args = _parse_args()
-    args.func(args)
+
+    try:
+        args.func(args)
+    except IOError as e:
+        # A SIGPIPE is normal when `es-cli` is piped to a command that ends prematurely (like `es shards | head`)
+        if e.errno == errno.EPIPE:
+            logger.debug("Broken Pipe")
+        else:
+            raise
