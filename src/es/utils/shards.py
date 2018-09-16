@@ -2,26 +2,51 @@
 from functools import reduce
 from operator import add
 import re
+from typing import NamedTuple, List
+
 import requests
 
 from . import config as es_config
 from . import humansize
 
 
-def _match_to_shard(re_match):
-    return {
-        'node-type': re_match.group('nodetype'),
-        'index': re_match.group('index'),
-        'num-shard': re_match.group('numshard'),
-        'status': re_match.group('status'),
-        'size': re_match.group('size'),
-        'node': re_match.group('node'),
-        'shard-type': re_match.group('shardtype'),
-        'extra': re_match.group('extra'),
-    }
+class EsShard(NamedTuple):
+    node_type: str
+    node: str
+    index: str
+    shard_type: str
+    num_shard: int
+    size: str
+    status: str
+    extra: str
 
 
-def get_shards(include_hot=True, include_warm=False, include_percolate=False, include_all_status=False):
+class SummarizedShards(NamedTuple):
+    node: str
+    size: str
+    amount: int
+
+
+def _match_to_shard(re_match) -> EsShard:
+    """
+    Returns an InternalShard.
+    """
+    return EsShard(node_type=re_match.group('nodetype'),
+                   index=re_match.group('index'),
+                   num_shard=re_match.group('numshard'),
+                   status=re_match.group('status'),
+                   size=re_match.group('size'),
+                   node=re_match.group('node'),
+                   shard_type=re_match.group('shardtype'),
+                   extra=re_match.group('extra'))
+
+
+def get_shards(include_hot=True, include_warm=False, include_percolate=False,
+               include_all_status=False) -> List[EsShard]:
+    """
+        Retrieves the list of shards from ES and returns a list of EsShard. It respects the shard type and status type
+        passed as parameters.
+    """
     env = es_config.env()
     shard_regex = r'^(?P<index>\S+)\s+' \
                   r'(?P<numshard>\d+)\s+' \
@@ -41,24 +66,33 @@ def get_shards(include_hot=True, include_warm=False, include_percolate=False, in
         match = pattern.match(shard_line)
         if match:
             shard = _match_to_shard(match)
-            if include_hot and shard['node-type'] == 'data-hot':
+            if include_hot and shard.node_type == 'data-hot':
                 shards.append(shard)
-            elif include_warm and shard['node-type'] == 'data-warm':
+            elif include_warm and shard.node_type == 'data-warm':
                 shards.append(shard)
-            elif include_percolate and shard['node-type'] == 'percolate':
+            elif include_percolate and shard.node_type == 'percolate':
                 shards.append(shard)
 
     # Remove non-started shards, unless we explicitly want them
-    shards = [shard for shard in shards if shard['status'] == 'STARTED' or include_all_status]
+    shards = [shard for shard in shards if shard.status == 'STARTED' or include_all_status]
     return shards
 
 
-def summarize_shards(node, shards):
-    shards_in_node = [shard for shard in shards if shard['node'] == node]
-    if len(shards_in_node) == 0:
-        return 0, 0
+def summarize_shards(shards: List[EsShard]) -> List[SummarizedShards]:
+    """
+    Summarizes shards grouping them by node.
+    """
+    grouped = {}
+    for shard in shards:
+        if shard.node not in grouped:
+            grouped[shard.node] = []
 
-    sizes = [humansize.parse(shard['size']) for shard in shards_in_node]
-    size = reduce(add, sizes)
+        grouped[shard.node].append(humansize.parse(shard.size))
 
-    return len(shards_in_node), size
+    summaries = []
+    for node, sizes in grouped.items():
+        total_size = reduce(add, sizes)
+        summaries.append(SummarizedShards(node=node,
+                                          size=total_size,
+                                          amount=len(sizes)))
+    return summaries

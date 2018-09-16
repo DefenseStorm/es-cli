@@ -36,21 +36,21 @@ def show_details(shards):
     str_format = "{0:50s}\t{1}\t{2}\t{3}\t{4:35s}\t{5}\t{6}"
     print(str_format.format('INDEX', 'NUM', 'TYPE', 'SIZE', 'NODE', 'STATUS', ''))
     for shard in shards:
-        print(str_format.format(shard['index'], 
-                                shard['num-shard'],
-                                shard['shard-type'],
-                                shard['size'],
-                                shard['node'],
-                                shard['status'],
-                                shard['extra']))
+        print(str_format.format(shard.index,
+                                shard.num_shard,
+                                shard.shard_type,
+                                shard.size,
+                                shard.node,
+                                shard.status,
+                                shard.extra))
 
 
 def show_summary(shards):
-    grouped_shards = {shard['node']: esshards.summarize_shards(shard['node'], shards) for shard in shards}
+    summarized = esshards.summarize_shards(shards)
 
     str_format = "{0:40s}\t{1}\t{2}"
     print(str_format.format('NODE', 'NUM', 'SIZE'))
-    for node in sorted(grouped_shards.keys()):
-        print(str_format.format(node,
-                                grouped_shards[node][0],
-                                humansize.stringify(grouped_shards[node][1])))
+    for summary in sorted(summarized, key=lambda s: s.node):
+        print(str_format.format(summary.node,
+                                summary.amount,
+                                humansize.stringify(summary.size)))
