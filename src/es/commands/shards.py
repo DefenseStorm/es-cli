@@ -21,14 +21,16 @@ def execute(args):
 
 
 def show_details(shards):
-    str_format = "{0:50s}\t{1}\t{2}\t{3}\t{4}"
-    print(str_format.format('INDEX', 'NUM', 'SIZE', 'NODE', 'STATUS'))
+    str_format = "{0:50s}\t{1}\t{2}\t{3}\t{4:35s}\t{5}\t{6}"
+    print(str_format.format('INDEX', 'NUM', 'TYPE', 'SIZE', 'NODE', 'STATUS', ''))
     for shard in shards:
         print(str_format.format(shard['index'], 
                                 shard['num-shard'],
+                                shard['shard-type'],
                                 shard['size'],
                                 shard['node'],
-                                shard['status']))
+                                shard['status'],
+                                shard['extra']))
 
 
 def show_summary(shards):
