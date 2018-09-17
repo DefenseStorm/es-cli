@@ -10,7 +10,8 @@ logger = logging.getLogger('__main__')
 
 
 def _parse_args():
-    parser = argparse.ArgumentParser(description="Executes common commands against ES so you need to "
+    parser = argparse.ArgumentParser(prog="es",
+                                     description="Executes common commands against ES so you need to "
                                                  "craft fewer curls.")
     sp = parser.add_subparsers(dest="subcommand")
     sp.required = True
@@ -30,15 +31,12 @@ def _parse_args():
                                              "watermark of ES, which then decides it will stop accepting new data).")
     sp_shards = sp.add_parser('shards',
                               help="lists shards in hot, warm, and percolate nodes")
-    sp_version = sp.add_parser('version',
-                               help="print eslib's version")
 
     sp_allocation.set_defaults(func=es_allocation)
     sp_durability.set_defaults(func=es_durability)
     sp_move_shards.set_defaults(func=es_move_shards)
     sp_read_only.set_defaults(func=es_read_only)
     sp_shards.set_defaults(func=es_shards)
-    sp_version.set_defaults(func=es_version)
 
     # Allocation
     group = sp_allocation.add_mutually_exclusive_group(required=False)
@@ -135,11 +133,6 @@ def es_read_only(args):
 def es_shards(args):
     from .commands import shards
     shards.execute(args)
-
-
-def es_version(args):
-    from .utils import get_version
-    print(get_version())
 
 
 if __name__ == '__main__':
